@@ -1,0 +1,31 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Node
+node_modules/
+frontend/dist/
+
+# Secrets / local config
+.env
+.env.*
+!.env.example
+!.env.ai.example
+
+# Model weights (downloaded automatically by ultralytics on first run)
+*.pt
+*.pth
+*.onnx
+backend/weights/
+
+# Runtime data (SQLite DB and user uploads are created on first run)
+backend/app.db
+backend/uploads/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
