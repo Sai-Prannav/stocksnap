@@ -26,7 +26,7 @@ const Stores = () => {
     try {
       const response = await storesApi.getAll();
       setStores(response.data);
-    } catch (err) {
+    } catch {
       addToast('Failed to fetch stores', 'error');
     } finally {
       setLoading(false);

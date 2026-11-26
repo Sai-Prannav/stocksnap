@@ -1,4 +1,7 @@
 import pytest
+
+# The 'advanced' pipeline is not wired into the app (the API uses YOLO11); its extra dependencies are optional.
+pytest.importorskip("albumentations", reason="the unwired advanced pipeline's dependencies are not installed")
 import numpy as np
 import cv2
 from unittest.mock import Mock, patch, MagicMock

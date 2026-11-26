@@ -39,7 +39,7 @@ const Scans = () => {
       ]);
       setStores(storesRes.data);
       setProducts(productsRes.data);
-    } catch (err) {
+    } catch {
       setError('Failed to fetch data');
     }
   };
@@ -55,7 +55,7 @@ const Scans = () => {
       
       const response = await scansApi.getAll(params);
       setScans(response.data);
-    } catch (err) {
+    } catch {
       setError('Failed to fetch scans');
     } finally {
       setLoading(false);

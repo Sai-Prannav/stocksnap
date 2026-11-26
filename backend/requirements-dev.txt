@@ -1,0 +1,12 @@
+# Test-only dependencies (CI). The app itself: requirements.txt. YOLO11 (ultralytics) is not needed for the tests.
+fastapi==0.115.12
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+sqlalchemy>=2.0.36
+pillow>=10.0.0
+numpy>=1.24.0
+pydantic[email]>=2.4.0
+python-dotenv>=1.0.0
+anyio>=3.7.1,<4.0.0
+httpx==0.28.1
+pytest>=8

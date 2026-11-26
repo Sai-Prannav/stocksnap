@@ -6,7 +6,6 @@ from app.db.database import get_db
 from app.models.models import Scan
 from app.services.storage import StorageService
 from app.services.image_analyzer import MockImageAnalyzer
-from app.services.real_image_analyzer import RealImageAnalyzer
 from app.services.image_annotator import ImageAnnotator
 from app import schemas
 from app.models import models
@@ -17,13 +16,39 @@ router = APIRouter(tags=["scans"])
 storage_service = StorageService()
 image_annotator = ImageAnnotator()
 
-# YOLO11 is the default analyzer; the mock is used only if the model cannot load
-try:
-    image_analyzer = RealImageAnalyzer()
-    print("StockSnap detection: YOLO11 active")
-except Exception as e:
-    print(f"WARNING: YOLO11 could not be loaded, using the mock fallback analyzer: {e}")
-    image_analyzer = MockImageAnalyzer()
+# YOLO11 is the default analyzer; the mock is used if the model cannot load, or on purpose with
+# STOCKSNAP_ANALYZER=mock (tests and CI, which do not install ultralytics / PyTorch)
+def _make_analyzer():
+    if os.environ.get("STOCKSNAP_ANALYZER") == "mock":
+        return MockImageAnalyzer()
+    try:
+        from app.services.real_image_analyzer import RealImageAnalyzer
+        analyzer = RealImageAnalyzer()
+        print("StockSnap detection: YOLO11 active")
+        return analyzer
+    except Exception as e:
+        print(f"WARNING: YOLO11 could not be loaded, using the mock fallback analyzer: {e}")
+        return MockImageAnalyzer()
+
+
+image_analyzer = _make_analyzer()
+
+ALLOWED_IMAGE_TYPES = {"image/jpeg": {".jpg", ".jpeg"}, "image/png": {".png"}, "image/webp": {".webp"}}
+MAX_UPLOAD_BYTES = int(float(os.environ.get("STOCKSNAP_MAX_UPLOAD_MB", "10")) * 1024 * 1024)
+
+
+def check_upload(image: UploadFile) -> None:
+    """Shelf photos only: JPEG / PNG / WebP (type and extension must agree), at most MAX_UPLOAD_BYTES."""
+    ext = os.path.splitext(image.filename or "")[1].lower()
+    if ext not in ALLOWED_IMAGE_TYPES.get(image.content_type or "", set()):
+        raise HTTPException(status_code=415, detail="upload a JPEG, PNG or WebP photo")
+    image.file.seek(0, os.SEEK_END)
+    size = image.file.tell()
+    image.file.seek(0)
+    if size == 0:
+        raise HTTPException(status_code=400, detail="the photo is empty")
+    if size > MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail=f"the photo is larger than {MAX_UPLOAD_BYTES // (1024 * 1024)} MB")
 
 @router.get("/{scan_id}/annotated")
 async def get_annotated_image(scan_id: int, db: Session = Depends(get_db)):
@@ -44,7 +69,8 @@ async def create_scan(
     image: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
-    # 1. Save the file
+    # 1. Check and save the file
+    check_upload(image)
     file_path = await storage_service.save_upload_file(image)
     
     # 2. Run AI Analysis

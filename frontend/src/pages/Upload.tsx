@@ -27,7 +27,7 @@ const UploadPage = () => {
         ]);
         setStores(storesRes.data);
         setProducts(productsRes.data);
-      } catch (err) {
+      } catch {
         setError('Failed to load stores and products');
       }
     };
@@ -46,7 +46,7 @@ const UploadPage = () => {
       const annotatedPath = response.data.annotated_image_path;
       setAnnotatedImage(`http://localhost:8000/${annotatedPath}`);
       setShowAnnotated(true);
-    } catch (err: any) {
+    } catch {
       setError('Failed to load annotated image');
     } finally {
       setLoadingAnnotated(false);
