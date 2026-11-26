@@ -1,0 +1,28 @@
+# Privacy check: no local machine paths, secret tokens or local artifacts in this public repo.
+# Generic patterns only. The full check (with private names) runs as a local pre-push hook before anything is pushed.
+name: privacy
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: No local paths, secrets or local artifacts
+        run: |
+          bad=0
+          ex=':!.github/workflows/privacy.yml'
+          if git grep -I -n -E '[A-Za-z]:[\\/]{1,2}Users[\\/]{1,2}|/[a-z]/Users/|_System[\\/](Friday|Scripts|Meta|Inbox|Events|Contracts)\b' -- . "$ex"; then
+            echo "::error::local machine or private-vault paths found (above)"; bad=1; fi
+          if git grep -I -n -E 'AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{40,}|xox[abprs]-[A-Za-z0-9-]{10,}|AIza[0-9A-Za-z_-]{35}|sk-(ant-)?[A-Za-z0-9_-]{32,}|[0-9]{8,10}:AA[A-Za-z0-9_-]{30,}' -- . "$ex"; then
+            echo "::error::something that looks like a secret token was found (above)"; bad=1; fi
+          if git ls-files | grep -E -i '\.(db|sqlite3?|pickle|pkl|pem|key|p12|pfx|bundle)$|(^|/)\.env$|(^|/)uploads/|(^|/)test_results_[^/]*\.json$'; then
+            echo "::error::local artifacts are tracked (above)"; bad=1; fi
+          exit $bad
