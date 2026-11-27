@@ -4,7 +4,8 @@ from sqlalchemy.orm import sessionmaker
 import os
 
 # SQLite database configuration
-DATABASE_URL = "sqlite:///./app.db"
+# STOCKSNAP_DATABASE_URL points the app at another database (the tests use a throwaway SQLite file)
+DATABASE_URL = os.environ.get("STOCKSNAP_DATABASE_URL", "sqlite:///./app.db")
 
 # Create engine
 engine = create_engine(
